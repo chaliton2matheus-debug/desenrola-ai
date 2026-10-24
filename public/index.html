@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101020">
+  <title>Desenrola AI</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #101020;
+      color: white;
+    }
+    main { max-width: 520px; margin: 30px auto; }
+    .logo { font-size: 34px; font-weight: bold; }
+    .logo span { color: #a78bfa; }
+    .sub { color: #c4c4d8; line-height: 1.5; }
+    .panel {
+      background: #1d1d32;
+      border: 1px solid #383852;
+      border-radius: 18px;
+      padding: 20px;
+      margin-top: 22px;
+    }
+    label { display: block; margin: 16px 0 8px; }
+    input, select, button {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    input, select {
+      background: #101020;
+      border: 1px solid #50506b;
+      color: white;
+    }
+    button {
+      margin-top: 16px;
+      border: 0;
+      background: #8b5cf6;
+      color: white;
+      font-weight: bold;
+    }
+    button:disabled { opacity: .6; }
+    #resultado {
+      white-space: pre-wrap;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+    .nota { color: #b8b8ce; font-size: 13px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="logo">Desenrola <span>AI</span> ✨</div>
+  <p class="sub">A inteligência que te ajuda a desenrolar a conversa.</p>
+
+  <section class="panel">
+    <h2>Qual vai ser a resposta?</h2>
+    <p class="sub">Envia um print legível da conversa para receber sugestões.</p>
+
+    <form id="form">
+      <label for="print">Print da conversa</label>
+      <input id="print" type="file" accept="image/*" required>
+
+      <label for="estilo">Estilo das sugestões</label>
+      <select id="estilo">
+        <option value="natural">Natural e tranquilo</option>
+        <option value="engracado">Engraçado</option>
+        <option value="flerte">Flerte leve</option>
+        <option value="direto">Direto e confiante</option>
+      </select>
+
+      <button id="enviar" type="submit">✨ Analisar conversa</button>
+    </form>
+
+    <p class="nota">Envia apenas conversas que tens autorização para compartilhar. Evita incluir senhas ou dados pessoais.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Suas sugestões</h2>
+    <p id="estado" class="sub">As respostas aparecerão aqui.</p>
+    <div id="resultado"></div>
+  </section>
+</main>
+
+<script>
+const form = document.getElementById("form");
+const estado = document.getElementById("estado");
+const resultado = document.getElementById("resultado");
+const enviar = document.getElementById("enviar");
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const arquivo = document.getElementById("print").files[0];
+  const estilo = document.getElementById("estilo").value;
+
+  if (!arquivo) return;
+  if (!arquivo.type.startsWith("image/")) {
+    estado.textContent = "Escolhe um arquivo de imagem.";
+    return;
+  }
+  if (arquivo.size > 5 * 1024 * 1024) {
+    estado.textContent = "A imagem deve ter até 5 MB.";
+    return;
+  }
+
+  const dados = new FormData();
+  dados.append("print", arquivo);
+  dados.append("estilo", estilo);
+
+  enviar.disabled = true;
+  estado.textContent = "Analisando o print...";
+  resultado.textContent = "";
+
+  try {
+    const resposta = await fetch("/api/analisar", {
+      method: "POST",
+      body: dados
+    });
+    const json = await resposta.json();
+
+    if (!resposta.ok) throw new Error(json.erro || "Falha na análise.");
+
+    resultado.textContent = json.sugestoes;
+    estado.textContent = "Pronto! Aqui estão as sugestões:";
+  } catch (erro) {
+    estado.textContent = erro.message || "Não foi possível conectar à IA.";
+  } finally {
+    enviar.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
